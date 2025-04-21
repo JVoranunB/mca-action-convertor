@@ -1,0 +1,33 @@
+{
+    "users": {
+      "select": ["id", "username", "email", "created_at"],
+      "where": {
+        "and": [
+          { "status": "active" },
+          { "created_at": {">=": "2023-01-01"} }
+        ],
+        "or": [
+          { "age": {">=": 18} },
+          { "role": {"in": ["admin", "editor"]} }
+        ]
+      },
+      "order": ["username", "created_at"],
+      "limit": 10,
+      "posts": {
+        "select": ["id", "title", "content"],
+        "where": {
+          "published": true
+        },
+        "order": "-created_at",
+        "limit": 5,
+        "join": "user_id:id",
+        "comments": {
+          "select": ["id", "content"],
+          "where": {
+            "approved": true
+          },
+          "limit": 3
+        }
+      }
+    }
+  }
