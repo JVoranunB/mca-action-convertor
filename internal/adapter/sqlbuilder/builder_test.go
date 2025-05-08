@@ -10,7 +10,7 @@ import (
 )
 
 func TestConvertToSQL(t *testing.T) {
-	// Create a simple query
+	// Create a test query with relations
 	query := createTestQuery()
 
 	// Create SQL builder
@@ -25,8 +25,9 @@ func TestConvertToSQL(t *testing.T) {
 
 	// Check if SQL contains expected parts (basic validation)
 	expectedParts := []string{
-		"SELECT users.id, users.username, users.email",
+		"SELECT users.id, users.username, users.email, posts.id, posts.title",
 		"FROM users",
+		"INNER JOIN posts ON posts.user_id = users.id",
 		"WHERE users.status = 'active'",
 		"ORDER BY users.username ASC",
 		"LIMIT 10",
@@ -36,19 +37,62 @@ func TestConvertToSQL(t *testing.T) {
 		assert.Contains(t, usersSQL, part, "Expected SQL to contain '%s'", part)
 	}
 
-	// Check relation queries
-	postsSQL, ok := sqlMap["users_posts"]
-	require.True(t, ok, "Expected 'users_posts' relation query in SQL map")
+	// Verify that only one query is generated (combined query)
+	assert.Len(t, sqlMap, 1, "Expected exactly one combined SQL query")
+}
 
-	expectedPostsParts := []string{
-		"SELECT posts.id, posts.title",
-		"FROM posts",
-		"INNER JOIN users ON posts.user_id = users.id",
+func TestBuildCombinedSQLWithMultipleRelations(t *testing.T) {
+	// Create a query with multiple relations
+	query := domain.Query{
+		"orders": &domain.TableQuery{
+			Select: []string{"id", "order_date", "total_amount"},
+			Where: domain.WhereClause{
+				Conditions: map[string]interface{}{
+					"status": "completed",
+				},
+			},
+			Relations: map[string]*domain.TableQuery{
+				"customers": {
+					Select: []string{"id", "name", "email"},
+					Join:   domain.StrPtr("customer_id:id"),
+				},
+				"items": {
+					Select: []string{"id", "product_id", "quantity"},
+					Join:   domain.StrPtr("order_id:id"),
+					Relations: map[string]*domain.TableQuery{
+						"products": {
+							Select: []string{"id", "name", "sku"},
+							Join:   domain.StrPtr("id:product_id"),
+						},
+					},
+				},
+			},
+		},
 	}
 
-	for _, part := range expectedPostsParts {
-		assert.Contains(t, postsSQL, part, "Expected relation SQL to contain '%s'", part)
+	builder := NewSQLBuilder()
+	sqlMap := builder.ConvertToSQL(&query)
+
+	// Check if orders query exists
+	ordersSQL, ok := sqlMap["orders"]
+	require.True(t, ok, "Expected 'orders' query in SQL map")
+
+	// Check if SQL contains all expected parts
+	expectedParts := []string{
+		"SELECT orders.id, orders.order_date, orders.total_amount, customers.id, customers.name, customers.email, items.id, items.product_id, items.quantity, products.id, products.name, products.sku",
+		"FROM orders",
+		"INNER JOIN customers ON customers.customer_id = orders.id",
+		"INNER JOIN items ON items.order_id = orders.id",
+		"INNER JOIN products ON products.id = items.product_id",
+		"WHERE orders.status = 'completed'",
 	}
+
+	for _, part := range expectedParts {
+		assert.Contains(t, ordersSQL, part, "Expected SQL to contain '%s'", part)
+	}
+
+	// Verify that only one query is generated (combined query)
+	assert.Len(t, sqlMap, 1, "Expected exactly one combined SQL query")
 }
 
 func TestBuildWhereClauseWithComplexConditions(t *testing.T) {

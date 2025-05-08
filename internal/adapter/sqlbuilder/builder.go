@@ -21,70 +21,114 @@ func (b *SQLBuilder) ConvertToSQL(query *domain.Query) map[string]string {
 	result := make(map[string]string)
 
 	for tableName, tableQuery := range *query {
-		sql := b.buildSQL(tableName, tableQuery, nil, "")
+		// Build a combined query for the main table and its relations
+		sql := b.buildCombinedSQL(tableName, tableQuery)
 		result[tableName] = sql
-
-		b.processRelations(result, tableName, tableQuery)
 	}
 
 	return result
 }
 
-// processRelations processes relation queries recursively
-func (b *SQLBuilder) processRelations(result map[string]string, parentName string, parentQuery *domain.TableQuery) {
-	for relationName, relationQuery := range parentQuery.Relations {
-		fullName := parentName + "_" + relationName
-		sql := b.buildSQL(relationName, relationQuery, parentQuery, parentName)
-		result[fullName] = sql
-
-		// Process nested relations
-		b.processRelations(result, fullName, relationQuery)
-	}
-}
-
-// buildSQL builds an SQL statement for a single table query
-func (b *SQLBuilder) buildSQL(tableName string, query *domain.TableQuery, parentQuery *domain.TableQuery, parentTable string) string {
+// buildCombinedSQL builds a single SQL query combining the main table and its relations
+func (b *SQLBuilder) buildCombinedSQL(tableName string, query *domain.TableQuery) string {
 	var sql strings.Builder
+
+	// Get all related tables for joins
+	joins := b.getJoinClauses(tableName, query)
+
+	// Get all selected fields including from related tables
+	selectedFields := b.getSelectedFields(tableName, query)
 
 	// SELECT clause
 	sql.WriteString("SELECT ")
-	if len(query.Select) > 0 {
-		fields := make([]string, len(query.Select))
-		for i, field := range query.Select {
-			fields[i] = tableName + "." + field
-		}
-		sql.WriteString(strings.Join(fields, ", "))
-	} else {
-		sql.WriteString(tableName + ".*")
-	}
+	sql.WriteString(strings.Join(selectedFields, ", "))
 
 	// FROM clause
-	sql.WriteString("\nFROM " + tableName)
+	sql.WriteString(" FROM " + tableName)
 
-	// JOIN clause
-	if parentQuery != nil {
-		joinCondition := b.getJoinCondition(tableName, query, parentTable)
-		sql.WriteString(fmt.Sprintf("\nINNER JOIN %s ON %s", parentTable, joinCondition))
+	// JOIN clauses
+	for _, join := range joins {
+		sql.WriteString(" " + join)
 	}
 
 	// WHERE clause
 	whereClause := b.buildWhereClause(tableName, query.Where)
 	if whereClause != "" {
-		sql.WriteString("\nWHERE " + whereClause)
+		sql.WriteString(" WHERE " + whereClause)
 	}
 
 	// ORDER BY clause
 	orderClause := b.buildOrderClause(tableName, query.Order)
 	if orderClause != "" {
-		sql.WriteString("\nORDER BY " + orderClause)
+		sql.WriteString(" ORDER BY " + orderClause)
 	}
 
 	// LIMIT clause
 	if query.Limit != nil {
-		sql.WriteString(fmt.Sprintf("\nLIMIT %d", *query.Limit))
+		sql.WriteString(fmt.Sprintf(" LIMIT %d", *query.Limit))
 	}
 
 	return sql.String()
+}
+
+// getSelectedFields collects all selected fields from main table and relations
+func (b *SQLBuilder) getSelectedFields(tableName string, query *domain.TableQuery) []string {
+	// Start with fields from the main table
+	var allFields []string
+
+	if len(query.Select) > 0 {
+		for _, field := range query.Select {
+			allFields = append(allFields, tableName+"."+field)
+		}
+	} else {
+		allFields = append(allFields, tableName+".*")
+	}
+
+	// Add fields from related tables
+	for relationName, relationQuery := range query.Relations {
+		if len(relationQuery.Select) > 0 {
+			for _, field := range relationQuery.Select {
+				allFields = append(allFields, relationName+"."+field)
+			}
+		}
+	}
+
+	return allFields
+}
+
+// getJoinClauses generates all JOIN clauses for related tables
+func (b *SQLBuilder) getJoinClauses(tableName string, query *domain.TableQuery) []string {
+	var joins []string
+
+	// Process direct relations
+	for relationName, relationQuery := range query.Relations {
+		joinCondition := b.getJoinCondition(relationName, relationQuery, tableName)
+		join := fmt.Sprintf("INNER JOIN %s ON %s", relationName, joinCondition)
+		joins = append(joins, join)
+
+		// Process nested relations recursively
+		nestedJoins := b.getNestedJoinClauses(relationName, relationQuery)
+		joins = append(joins, nestedJoins...)
+	}
+
+	return joins
+}
+
+// getNestedJoinClauses generates JOIN clauses for nested relations
+func (b *SQLBuilder) getNestedJoinClauses(parentName string, parentQuery *domain.TableQuery) []string {
+	var joins []string
+
+	for relationName, relationQuery := range parentQuery.Relations {
+		joinCondition := b.getJoinCondition(relationName, relationQuery, parentName)
+		join := fmt.Sprintf("INNER JOIN %s ON %s", relationName, joinCondition)
+		joins = append(joins, join)
+
+		// Process further nested relations recursively
+		nestedJoins := b.getNestedJoinClauses(relationName, relationQuery)
+		joins = append(joins, nestedJoins...)
+	}
+
+	return joins
 }
 
 // getJoinCondition determines the join condition between tables

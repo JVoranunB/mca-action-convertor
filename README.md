@@ -1,156 +1,91 @@
-Project Structure
-mca-action-convertor/
-├── cmd/
-│   └── sqlconverter/
-│       └── main.go              # Application entry point
-├── internal/
-│   ├── domain/                  # Core domain entities
-│   │   ├── query.go
-│   │   └── whereclauses.go
-│   ├── usecase/                 # Business logic
-│   │   └── converter.go
-│   ├── repository/              # Data access interfaces
-│   │   └── query_repository.go
-│   └── adapter/                 # Interface adapters
-│       ├── jsonparser/
-│       │   └── parser.go
-│       └── sqlbuilder/
-│           └── builder.go
-├── pkg/
-│   └── formatter/               # Shared utility functions
-│       └── formatter.go
-└── test/
-    ├── integration_test.go      # Integration tests
-    └── testdata/                # Test data files
-        └── sample_query.json
-```# MCA Action Converter Refactoring
-
-## Clean Architecture Implementation
-
 # MCA Action Converter
 
-A Go library for converting JSON-based queries into SQL statements, designed using Clean Architecture principles.
-
-## Overview
-
-MCA Action Converter provides a flexible and extensible way to define database queries using JSON and convert them to SQL statements. This approach allows:
-
-- Defining complex queries with relations in a structured JSON format
-- Supporting logical operations (AND, OR) and various comparison operators
-- Building SQL queries with proper table joins and conditions
+A RESTful API service that converts JSON-based queries into SQL statements, designed using Clean Architecture principles.
 
 ## Features
 
-- JSON to SQL conversion
-- Support for complex WHERE clauses (AND, OR, comparison operators)
-- Support for nested relations with automatic JOIN conditions
-- Custom JOIN condition specifications
-- ORDER BY clause with ascending/descending options
-- LIMIT clause support
-- File-based query loading
+- Convert JSON queries to SQL statements via REST API
+- Generate combined SQL queries with JOINs in a single statement
+- Support for direct JSON format
+- JSON validation and error handling
+- Clean Architecture design
 
-## Installation
+## Architecture
+
+This project follows Clean Architecture principles with these layers:
+
+1. **Domain Layer** - Core business entities
+2. **Use Case Layer** - Application-specific business rules
+3. **Interface Adapters Layer** - Converts data between layers
+4. **Repository Layer** - Abstracts data access
+5. **Delivery Layer** - HTTP handlers and routes
+6. **Infrastructure Layer** - Configuration and logging
+
+## API Endpoints
+
+- `GET /api/health` - Health check
+- `POST /api/convert` - Convert JSON query to SQL
+
+## Running the Service
+
+### Running Locally
+
+To run the service locally:
 
 ```bash
-go get github.com/yourusername/mca-action-convertor
+# Install dependencies
+go mod download
+
+# Run the service
+go run cmd/api/main.go
 ```
 
-## Usage
+## Example Usage
 
-### Basic Example
+### Convert JSON to SQL
 
-```go
-package main
+```bash
+curl -X POST http://localhost:3000/api/convert \
+  -H "Content-Type: application/json" \
+  -d '{
+    "users": {
+      "select": ["id", "username", "email", "created_at"],
+      "where": {
+        "and": [
+          { "status": "active" },
+          { "created_at": { ">=": "2023-01-01" } }
+        ],
+        "or": [
+          { "age": { ">=": 18 } },
+          { "role": { "in": ["admin", "editor"] } }
+        ]
+      },
+      "order": ["username", "created_at"],
+      "limit": 10,
+      "orders": {
+        "select": ["id"],
+        "join": "user_id:id"
+      }
+    }
+  }'
+```
 
-import (
-	"fmt"
+The resulting output will be a combined SQL query:
 
-	"github.com/yourusername/mca-action-convertor/internal/adapter/jsonparser"
-	"github.com/yourusername/mca-action-convertor/internal/adapter/sqlbuilder"
-	"github.com/yourusername/mca-action-convertor/internal/repository"
-	"github.com/yourusername/mca-action-convertor/internal/usecase"
-)
-
-func main() {
-	// Initialize components
-	parser := jsonparser.NewParser()
-	repo := repository.NewQueryRepository(parser)
-	sqlBuilder := sqlbuilder.NewSQLBuilder()
-	converter := usecase.NewQueryConverterUseCase(repo, sqlBuilder)
-
-	// JSON query definition
-	jsonStr := `{
-		"users": {
-			"select": ["id", "username", "email"],
-			"where": {
-				"status": "active"
-			},
-			"order": "username",
-			"limit": 10
-		}
-	}`
-
-	// Convert JSON to SQL
-	sqlMap, err := converter.ConvertJSONToSQL(jsonStr)
-	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		return
-	}
-
-	// Print SQL statements
-	for name, sql := range sqlMap {
-		fmt.Printf("\n-- %s\n%s;\n", name, sql)
-	}
+```json
+{
+  "status": "success",
+  "data": {
+    "queries": {
+      "users": "SELECT users.id, users.username, users.email, users.created_at, orders.id\nFROM users\nINNER JOIN orders ON orders.user_id = users.id\nWHERE (users.status = 'active' AND users.created_at >= '2023-01-01') AND (users.age >= 18 OR users.role IN ('admin', 'editor'))\nORDER BY users.username ASC, users.created_at ASC\nLIMIT 10"
+    }
+  }
 }
 ```
 
-### Query with Relations
-
-```go
-jsonStr := `{
-	"users": {
-		"select": ["id", "username"],
-		"where": {
-			"status": "active"
-		},
-		"posts": {
-			"select": ["id", "title"],
-			"where": {
-				"published": true
-			},
-			"join": "user_id:id" 
-		}
-	}
-}`
-```
-
-### Complex Where Clauses
-
-```go
-jsonStr := `{
-	"orders": {
-		"select": ["id", "total"],
-		"where": {
-			"and": [
-				{ "status": "completed" },
-				{ "created_at": {">=": "2023-01-01"} }
-			],
-			"or": [
-				{ "total": {">": 100} },
-				{ "priority": {"in": ["high", "urgent"]} }
-			]
-		}
-	}
-}`
-```
-
-### Loading from File
-
-```go
-sqlMap, err := converter.ConvertFileToSQL("path/to/query.json")
-```
-
 ## JSON Query Format
+
+The service accepts JSON queries in the following format:
 
 ```json
 {
@@ -177,24 +112,91 @@ sqlMap, err := converter.ConvertFileToSQL("path/to/query.json")
 }
 ```
 
-## Where Operators
+### Key Features of the Query Format
 
-- Equality: `"field": "value"`
-- Greater than: `"field": { ">": value }`
-- Greater than or equal: `"field": { ">=": value }`
-- Less than: `"field": { "<": value }`
-- Less than or equal: `"field": { "<=": value }`
-- IN: `"field": { "in": [value1, value2] }`
+1. **Main Table**: The root object key defines the main table in the query.
 
-## Architecture
+2. **Select Fields**: The `select` array specifies which fields to select from the table.
 
-This project follows Clean Architecture principles with these layers:
+3. **Where Clauses**:
+   - Direct conditions: `"field": "value"`
+   - AND conditions: `"and": [ { "field1": "value1" }, ... ]`
+   - OR conditions: `"or": [ { "field1": "value1" }, ... ]`
+   - Operators: `"field": { ">": value }`, `"field": { "in": [value1, value2] }`
 
-1. **Domain Layer** - Core business entities
-2. **Use Case Layer** - Application-specific business rules
-3. **Interface Adapters Layer** - Converts data between layers
-4. **Repository Layer** - Abstracts data access
-5. **Frameworks & Drivers Layer** - External frameworks and tools
+4. **Order By**: 
+   - String: `"order": "field"` (ascending) or `"order": "-field"` (descending)
+   - Array: `"order": ["field1", "-field2"]`
+
+5. **Limit**: `"limit": 10`
+
+6. **Relations**: Nested objects represent related tables to join with
+   - `"join": "foreign_key:primary_key"` specifies the join condition
+   - If omitted, a default join condition is used: `relation.main_table_id = main_table.id`
+
+### Complex Query Example
+
+Here's a more complex example that generates a combined SQL query with joins:
+
+```json
+{
+  "orders": {
+    "select": ["id", "order_number", "total_amount", "status"],
+    "where": {
+      "and": [
+        { "status": {"in": ["shipped", "delivered"]} },
+        { "order_date": {">=": "2023-06-01"} }
+      ],
+      "total_amount": {">": 50}
+    },
+    "order": ["-order_date", "total_amount"],
+    "limit": 100,
+    "customer": {
+      "select": ["id", "name", "email"],
+      "join": "customer_id:id"
+    },
+    "items": {
+      "select": ["id", "product_id", "quantity"],
+      "join": "order_id:id",
+      "products": {
+        "select": ["id", "name", "sku"],
+        "join": "id:product_id"
+      }
+    }
+  }
+}
+```
+
+This will generate a single SQL query with the appropriate JOINs.
+
+## Project Structure
+
+```
+mca-action-convertor/
+├── api/                       # API documentation
+├── cmd/
+│   └── api/                   # Application entry point
+│       └── main.go
+├── internal/
+│   ├── adapter/               # Interface adapters
+│   │   ├── jsonparser/
+│   │   └── sqlbuilder/
+│   ├── domain/                # Core domain entities
+│   ├── handler/               # HTTP handlers
+│   │   └── handler.go
+│   ├── infrastructure/        # Infrastructure concerns
+│   │   └── config/
+│   │       ├── env.go         # Environment configuration
+│   │       └── logger.go      # Logging configuration
+│   ├── repository/            # Data access interfaces
+│   ├── routes/                # API routes
+│   │   └── routes.go
+│   └── usecase/               # Business logic
+├── pkg/                       # Shared utilities
+│   └── formatter/
+├── test/                      # Tests
+└── README.md                  # This file
+```
 
 ## Running Tests
 
@@ -202,14 +204,6 @@ This project follows Clean Architecture principles with these layers:
 # Run all tests
 go test ./...
 
-# Run with coverage
-go test ./... -cover
+# Run tests with coverage
+go test -cover ./...
 ```
-
-## License
-
-MIT License
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
