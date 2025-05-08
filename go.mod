@@ -1,4 +1,4 @@
-module mca-action-convertor
+module mca-sql-convertor
 
 go 1.20
 

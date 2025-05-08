@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"mca-action-convertor/internal/domain"
-	"mca-action-convertor/pkg/formatter"
+	"mca-sql-convertor/internal/domain"
+	"mca-sql-convertor/pkg/formatter"
 )
 
 // SQLBuilder converts domain queries to SQL

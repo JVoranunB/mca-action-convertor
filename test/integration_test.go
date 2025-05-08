@@ -8,11 +8,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"mca-action-convertor/internal/adapter/jsonparser"
-	"mca-action-convertor/internal/adapter/sqlbuilder"
-	"mca-action-convertor/internal/repository"
-	"mca-action-convertor/internal/usecase"
-	"mca-action-convertor/test/setup"
+	"mca-sql-convertor/internal/adapter/jsonparser"
+	"mca-sql-convertor/internal/adapter/sqlbuilder"
+	"mca-sql-convertor/internal/repository"
+	"mca-sql-convertor/internal/usecase"
+	"mca-sql-convertor/test/setup"
 )
 
 // Test with sample file

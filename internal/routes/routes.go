@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"mca-action-convertor/internal/handlers"
+	"mca-sql-convertor/internal/handlers"
 
 	"github.com/gofiber/fiber/v2"
 )

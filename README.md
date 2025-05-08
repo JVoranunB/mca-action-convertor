@@ -23,8 +23,8 @@ This project follows Clean Architecture principles with these layers:
 
 ## API Endpoints
 
-- `GET /api/health` - Health check
-- `POST /api/convert` - Convert JSON query to SQL
+- `GET /api/v1/health` - Health check
+- `POST /api/v1/convert` - Convert JSON query to SQL
 
 ## Running the Service
 
@@ -172,7 +172,7 @@ This will generate a single SQL query with the appropriate JOINs.
 ## Project Structure
 
 ```
-mca-action-convertor/
+mca-sql-convertor/
 ├── api/                       # API documentation
 ├── cmd/
 │   └── api/                   # Application entry point

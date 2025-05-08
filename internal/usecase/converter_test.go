@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"mca-action-convertor/internal/domain"
+	"mca-sql-convertor/internal/domain"
 )
 
 // Define mocks using testify/mock
