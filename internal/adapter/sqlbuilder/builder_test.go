@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"mca-sql-convertor/internal/domain"
+	"mca-bigQuery/internal/domain"
 )
 
 func TestConvertToSQL(t *testing.T) {

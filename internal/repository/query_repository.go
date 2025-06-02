@@ -3,7 +3,7 @@ package repository
 import (
 	"io/ioutil"
 
-	"mca-sql-convertor/internal/domain"
+	"mca-bigQuery/internal/domain"
 )
 
 // QueryRepository defines the interface for loading queries

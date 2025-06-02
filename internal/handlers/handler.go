@@ -4,7 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/zap"
 
-	"mca-sql-convertor/internal/usecase"
+	"mca-bigQuery/internal/usecase"
 )
 
 // Handler handles HTTP requests

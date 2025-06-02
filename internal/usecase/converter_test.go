@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
-	"mca-sql-convertor/internal/domain"
+	"mca-bigQuery/internal/domain"
 )
 
 // Define mocks using testify/mock

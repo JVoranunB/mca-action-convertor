@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"mca-sql-convertor/internal/domain"
-	"mca-sql-convertor/pkg/formatter"
+	"mca-bigQuery/internal/domain"
+	"mca-bigQuery/pkg/formatter"
 )
 
 // SQLBuilder converts domain queries to SQL

@@ -1,4 +1,4 @@
-module mca-sql-convertor
+module mca-bigQuery
 
 go 1.20
 

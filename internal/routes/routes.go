@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"mca-sql-convertor/internal/handlers"
+	"mca-bigQuery/internal/handlers"
 
 	"github.com/gofiber/fiber/v2"
 )

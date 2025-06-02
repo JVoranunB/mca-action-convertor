@@ -1,8 +1,8 @@
 package usecase
 
 import (
-	"mca-sql-convertor/internal/domain"
-	"mca-sql-convertor/internal/repository"
+	"mca-bigQuery/internal/domain"
+	"mca-bigQuery/internal/repository"
 )
 
 // SQLBuilderPort defines the interface for SQL building

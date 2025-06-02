@@ -172,7 +172,7 @@ This will generate a single SQL query with the appropriate JOINs.
 ## Project Structure
 
 ```
-mca-sql-convertor/
+mca-bigQuery/
 ├── api/                       # API documentation
 ├── cmd/
 │   └── api/                   # Application entry point

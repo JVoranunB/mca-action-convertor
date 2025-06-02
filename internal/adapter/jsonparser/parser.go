@@ -3,7 +3,7 @@ package jsonparser
 import (
 	"encoding/json"
 
-	"mca-sql-convertor/internal/domain"
+	"mca-bigQuery/internal/domain"
 )
 
 // QueryDTO is a data transfer object for JSON unmarshaling

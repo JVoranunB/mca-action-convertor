@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log"
 
-	"mca-sql-convertor/internal/adapter/jsonparser"
-	"mca-sql-convertor/internal/adapter/sqlbuilder"
-	"mca-sql-convertor/internal/repository"
-	"mca-sql-convertor/internal/usecase"
+	"mca-bigQuery/internal/adapter/jsonparser"
+	"mca-bigQuery/internal/adapter/sqlbuilder"
+	"mca-bigQuery/internal/repository"
+	"mca-bigQuery/internal/usecase"
 )
 
 func main() {
